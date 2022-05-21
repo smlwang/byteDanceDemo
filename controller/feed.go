@@ -1,9 +1,13 @@
 package controller
 
 import (
-	"github.com/gin-gonic/gin"
+	"log"
 	"net/http"
 	"time"
+
+	. "github.com/RaymondCode/simple-demo/repository"
+	"github.com/RaymondCode/simple-demo/service"
+	"github.com/gin-gonic/gin"
 )
 
 type FeedResponse struct {
@@ -12,11 +16,34 @@ type FeedResponse struct {
 	NextTime  int64   `json:"next_time,omitempty"`
 }
 
+func bad(err error, c *gin.Context) {
+	c.JSON(http.StatusOK, FeedResponse{
+		Response: Response{
+			StatusCode: -1,
+			StatusMsg:  err.Error(),
+		},
+		VideoList: nil,
+		NextTime:  time.Now().Unix(),
+	})
+	log.Println(err)
+}
+
 // Feed same demo video list for every request
 func Feed(c *gin.Context) {
+	latest_time := c.Query("latest_time")
+	token := c.Query("token")
+	workFlow := service.NewVideoInstance(latest_time, token)
+	err := workFlow.Do()
+	if err != nil {
+		bad(err, c)
+		return
+	}
 	c.JSON(http.StatusOK, FeedResponse{
-		Response:  Response{StatusCode: 0},
-		VideoList: DemoVideos,
-		NextTime:  time.Now().Unix(),
+		Response: Response{
+			StatusCode: 0,
+			StatusMsg:  "success",
+		},
+		VideoList: *(workFlow.VideoList),
+		NextTime:  workFlow.NextTime,
 	})
 }

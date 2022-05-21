@@ -1,9 +1,12 @@
 package controller
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
-	"sync/atomic"
+
+	"github.com/RaymondCode/simple-demo/service"
+
+	. "github.com/RaymondCode/simple-demo/repository"
+	"github.com/gin-gonic/gin"
 )
 
 // usersLoginInfo use map to store user info, and key is username+password for demo
@@ -19,8 +22,6 @@ var usersLoginInfo = map[string]User{
 	},
 }
 
-var userIdSequence = int64(1)
-
 type UserLoginResponse struct {
 	Response
 	UserId int64  `json:"user_id,omitempty"`
@@ -35,58 +36,51 @@ type UserResponse struct {
 func Register(c *gin.Context) {
 	username := c.Query("username")
 	password := c.Query("password")
-
-	token := username + password
-
-	if _, exist := usersLoginInfo[token]; exist {
+	user := User{Name: username}
+	workFlow := service.NewRegistFlowInstance(&user, password)
+	if err := workFlow.Do(); err != nil {
 		c.JSON(http.StatusOK, UserLoginResponse{
-			Response: Response{StatusCode: 1, StatusMsg: "User already exist"},
+			Response: Response{StatusCode: 1, StatusMsg: err.Error()},
 		})
-	} else {
-		atomic.AddInt64(&userIdSequence, 1)
-		newUser := User{
-			Id:   userIdSequence,
-			Name: username,
-		}
-		usersLoginInfo[token] = newUser
-		c.JSON(http.StatusOK, UserLoginResponse{
-			Response: Response{StatusCode: 0},
-			UserId:   userIdSequence,
-			Token:    username + password,
-		})
+		return
 	}
+	c.JSON(http.StatusOK, UserLoginResponse{
+		Response: Response{StatusCode: 0},
+		UserId:   user.Id,
+		Token:    workFlow.Token,
+	})
 }
 
 func Login(c *gin.Context) {
 	username := c.Query("username")
 	password := c.Query("password")
-
-	token := username + password
-
-	if user, exist := usersLoginInfo[token]; exist {
+	workFlow := service.NewLoginFlowInstance(username, password)
+	workFlow.Do()
+	if workFlow.Err != nil {
 		c.JSON(http.StatusOK, UserLoginResponse{
-			Response: Response{StatusCode: 0},
-			UserId:   user.Id,
-			Token:    token,
+			Response: Response{StatusCode: 1, StatusMsg: workFlow.Err.Error()},
 		})
-	} else {
-		c.JSON(http.StatusOK, UserLoginResponse{
-			Response: Response{StatusCode: 1, StatusMsg: "User doesn't exist"},
-		})
+		return
 	}
+	c.JSON(http.StatusOK, UserLoginResponse{
+		Response: Response{StatusCode: 0},
+		UserId:   workFlow.User.Id,
+		Token:    workFlow.Token,
+	})
+
 }
 
 func UserInfo(c *gin.Context) {
 	token := c.Query("token")
-
-	if user, exist := usersLoginInfo[token]; exist {
+	user, err := service.UserInfo(token)
+	if err != nil {
 		c.JSON(http.StatusOK, UserResponse{
-			Response: Response{StatusCode: 0},
-			User:     user,
+			Response: Response{StatusCode: 1, StatusMsg: err.Error()},
 		})
-	} else {
-		c.JSON(http.StatusOK, UserResponse{
-			Response: Response{StatusCode: 1, StatusMsg: "User doesn't exist"},
-		})
+		return
 	}
+	c.JSON(http.StatusOK, UserResponse{
+		Response: Response{StatusCode: 0},
+		User:     *user,
+	})
 }

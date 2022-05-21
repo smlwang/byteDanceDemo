@@ -1,4 +1,4 @@
-package controller
+package repository
 
 type Response struct {
 	StatusCode int32  `json:"status_code"`
@@ -7,8 +7,10 @@ type Response struct {
 
 type Video struct {
 	Id            int64  `json:"id,omitempty"`
-	Author        User   `json:"author"`
-	PlayUrl       string `json:"play_url" json:"play_url,omitempty"`
+	Created       int64  `json:"-"`
+	AuthorRefer   int64  `json:"-"`
+	Author        User   `json:"author" gorm:"foreignKey:AuthorRefer"`
+	PlayUrl       string `json:"play_url,omitempty"`
 	CoverUrl      string `json:"cover_url,omitempty"`
 	FavoriteCount int64  `json:"favorite_count,omitempty"`
 	CommentCount  int64  `json:"comment_count,omitempty"`
@@ -16,10 +18,11 @@ type Video struct {
 }
 
 type Comment struct {
-	Id         int64  `json:"id,omitempty"`
-	User       User   `json:"user"`
-	Content    string `json:"content,omitempty"`
-	CreateDate string `json:"create_date,omitempty"`
+	Id              int64  `json:"id,omitempty"`
+	UserKey_Comment int64  `json:"-"`
+	User            User   `json:"user" gorm:"foreignKey:UserKey_Comment"`
+	Content         string `json:"content,omitempty"`
+	CreateDate      string `json:"create_date,omitempty"`
 }
 
 type User struct {
@@ -28,4 +31,9 @@ type User struct {
 	FollowCount   int64  `json:"follow_count,omitempty"`
 	FollowerCount int64  `json:"follower_count,omitempty"`
 	IsFollow      bool   `json:"is_follow,omitempty"`
+}
+type IdInfo struct {
+	UserId_Max    int64
+	VideoId_Max   int64
+	CommentId_Max int64
 }

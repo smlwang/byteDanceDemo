@@ -1,5 +1,7 @@
 package controller
 
+import . "github.com/RaymondCode/simple-demo/repository"
+
 var DemoVideos = []Video{
 	{
 		Id:            1,
