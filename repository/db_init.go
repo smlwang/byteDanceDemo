@@ -31,6 +31,8 @@ func Init() {
 		log.Fatal(err)
 	}
 }
+
+//测试用, 后续应该更改方案
 func idInit() error {
 	i := IdInfo{}
 	result := db.Model(&IdInfo{}).First(&i)
@@ -47,6 +49,8 @@ func idInit() error {
 	}
 	return result.Error
 }
+
+//将id状态保留, 防止id重复
 func End() {
 	i := IdInfo{}
 	db.First(&i)

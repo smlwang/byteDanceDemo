@@ -15,7 +15,7 @@ type GetVideoFlow struct {
 	NextTime    int64
 }
 
-func NewVideoInstance(latest_time string, token string) *GetVideoFlow {
+func NewVideoFlowInstance(latest_time string, token string) *GetVideoFlow {
 	return &GetVideoFlow{
 		Latest_time: tool.Int64(latest_time, func() int64 {
 			return time.Now().Unix()

@@ -32,7 +32,7 @@ func bad(err error, c *gin.Context) {
 func Feed(c *gin.Context) {
 	latest_time := c.Query("latest_time")
 	token := c.Query("token")
-	workFlow := service.NewVideoInstance(latest_time, token)
+	workFlow := service.NewVideoFlowInstance(latest_time, token)
 	err := workFlow.Do()
 	if err != nil {
 		bad(err, c)

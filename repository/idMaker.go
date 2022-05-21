@@ -8,6 +8,8 @@ var (
 	commentId int64
 )
 
+//自增生成ID
+
 func UserId() int64 {
 	return atomic.AddInt64(&userId, 1)
 }

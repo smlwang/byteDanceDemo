@@ -22,6 +22,8 @@ func NewPublishFlowInstance(ctx *gin.Context) *PublishFlow {
 	c = ctx
 	return &PublishFlow{}
 }
+
+//先检查用户是否存在
 func (p *PublishFlow) getUser() error {
 	token := c.PostForm("token")
 	u, err := GetUser_token(token)
@@ -31,6 +33,7 @@ func (p *PublishFlow) getUser() error {
 	p.user = u
 	return nil
 }
+
 func (p *PublishFlow) saveFile() error {
 	data, err := c.FormFile("data")
 	if err != nil {
@@ -38,9 +41,11 @@ func (p *PublishFlow) saveFile() error {
 	}
 	filename := filepath.Base(data.Filename)
 	videoId := VideoId()
-	finalName := fmt.Sprintf("%d_%s", videoId, filename)
+	//这里使用 用户id + 视频Id + 视频名称做存储
+	finalName := fmt.Sprintf("%d-%d_%s", p.user.Id, videoId, filename)
 	p.FinalName = finalName
 	save := filepath.Join("./public/", finalName)
+	//本地地址
 	playPath := fmt.Sprintf("http://192.168.212.205:8080/static/%s", finalName)
 	err = c.SaveUploadedFile(data, save)
 	if err != nil {
