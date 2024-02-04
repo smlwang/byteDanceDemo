@@ -1,11 +1,8 @@
-package tool
+package utils
 
-import (
-	"strconv"
-)
+import "strconv"
 
-//str 要转换的字符串
-//defaultValue() 失败后的默认值
+//todo 失败的默认值为0
 func Int64(str string, defaultValue func() int64) int64 {
 	res, err := strconv.ParseInt(str, 10, 64)
 	if err != nil {

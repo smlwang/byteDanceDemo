@@ -1,32 +1,67 @@
 package controller
 
 import (
+	"douyinProject/entity"
+	"douyinProject/repository"
+	"douyinProject/utils"
 	"net/http"
+	"strconv"
+	"time"
 
-	. "github.com/RaymondCode/simple-demo/repository"
 	"github.com/gin-gonic/gin"
 )
 
-type CommentListResponse struct {
-	Response
-	CommentList []Comment `json:"comment_list,omitempty"`
+type commentreturn struct {
+	entity.Response
+	entity.User
+	Content   string `json:"content"`
+	CreatData string `json:"creat_data"`
+}
+type comment struct {
+	entity.Response
+	Id          int         `json:"id"`
+	User        entity.User `json:"user"`
+	Content     string      `json:"content"`
+	Create_data string      `json:"create_data"`
 }
 
-// CommentAction no practical effect, just check if token is valid
 func CommentAction(c *gin.Context) {
 	token := c.Query("token")
-
-	if _, exist := usersLoginInfo[token]; exist {
-		c.JSON(http.StatusOK, Response{StatusCode: 0})
-	} else {
-		c.JSON(http.StatusOK, Response{StatusCode: 1, StatusMsg: "User doesn't exist"})
+	video_id := c.Query("video_id")
+	action_type := c.Query("action_type")
+	if utils.TokenCheck(token) == false { // 验证token
+		c.JSON(http.StatusOK, entity.Response{
+			StatusCode: 1,
+			StatusMsg:  "error token",
+		})
+		return
 	}
-}
+	id := utils.GetIdInToken(token)       // 拿到用户id
+	user, _ := repository.GetUserInfo(id) // 通过用户Id拿到用户结构体
+	id1, _ := strconv.Atoi(video_id)      // 获取视频id
 
-// CommentList all videos have same demo comment list
-func CommentList(c *gin.Context) {
-	c.JSON(http.StatusOK, CommentListResponse{
-		Response:    Response{StatusCode: 0},
-		CommentList: DemoComments,
-	})
+	if action_type == "1" { // 评论操作
+		com := entity.Comment{
+			Id:         id,
+			User:       user,
+			Content:    c.Query("comment_text"),
+			CreateDate: time.Now().String(),
+		}
+		var result repository.Com
+		result = repository.Uploadcomment(com, id1)
+
+		c.JSON(http.StatusOK, comment{
+			Response:    entity.Response{StatusCode: 1, StatusMsg: "success"},
+			Id:          int(result.Id),
+			User:        user,
+			Content:     result.Message,
+			Create_data: result.CreateData,
+		})
+	} else { // 删除评论
+		repository.DeleteComment(id1)
+		c.JSON(http.StatusOK, entity.Response{
+			StatusCode: 0,
+			StatusMsg:  "delete successfully",
+		})
+	}
 }

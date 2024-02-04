@@ -1,53 +1,46 @@
 package controller
 
 import (
-	"net/http"
-
-	"github.com/RaymondCode/simple-demo/service"
-
-	. "github.com/RaymondCode/simple-demo/repository"
+	"bytes"
+	"douyinProject/entity"
+	"douyinProject/service"
 	"github.com/gin-gonic/gin"
+	"io"
+	"log"
+	"net/http"
 )
 
-type VideoListResponse struct {
-	Response
-	VideoList []Video `json:"video_list"`
+func PublishFail(ctx *gin.Context, err error) {
+	ctx.JSON(http.StatusOK,
+		entity.Response{
+			StatusCode: -1,
+			StatusMsg:  err.Error()},
+	)
+	log.Println(err)
 }
 
-// Publish check token then save upload file to public directory
-func Publish(c *gin.Context) {
-	p := service.NewPublishFlowInstance(c)
-	err := p.Do()
+func Publish(ctx *gin.Context) {
+	//get token,title,data
+	token := ctx.PostForm("token")
+	title := ctx.PostForm("title")
+	file, header, err := ctx.Request.FormFile("data")
+	defer file.Close()
 	if err != nil {
-		c.JSON(http.StatusOK, Response{
-			StatusCode: 1,
-			StatusMsg:  err.Error(),
-		})
+		PublishFail(ctx, err)
 		return
 	}
-	c.JSON(http.StatusOK, Response{
-		StatusCode: 0,
-		StatusMsg:  p.FinalName + " uploaded successfully",
-	})
-}
-
-// PublishList all users have same publish video list
-func PublishList(c *gin.Context) {
-	token := c.Query("token")
-	videoList, err := service.GetList(token)
-	if err != nil {
-		c.JSON(http.StatusOK, VideoListResponse{
-			Response: Response{
-				StatusCode: 1,
-				StatusMsg:  err.Error(),
-			},
-			VideoList: *videoList,
-		})
+	filename := header.Filename
+	buf := bytes.NewBuffer(nil)
+	if _, err := io.Copy(buf, file); err != nil {
+		PublishFail(ctx, err)
+		return
 	}
-	c.JSON(http.StatusOK, VideoListResponse{
-		Response: Response{
-			StatusCode: 0,
-		},
-		VideoList: *videoList,
-	})
+	err = service.VideoPublish(token, title, buf.Bytes(), filename)
+	if err != nil {
+		PublishFail(ctx, err)
+		return
+	}
+	ctx.JSON(http.StatusOK,
+		entity.Response{StatusCode: 0, StatusMsg: "成功上传视频"},
+	)
 }
